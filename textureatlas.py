@@ -110,32 +110,31 @@ class PackRegion(object):
 
     def pack(self, packable):
         """Pack 2D packable into this region."""
-        if not self._packable:
-            # Is there room to pack this?
-            if (packable.width  > self._width) or \
+        if self._packable:
+            # Pack into sub-region
+            return self._sub1.pack(packable) or self._sub2.pack(packable)
+        # Is there room to pack this?
+        if (packable.width  > self._width) or \
                (packable.height > self._height):
-                return False
+            return False
 
-            # Pack
-            self._packable = packable
+        # Pack
+        self._packable = packable
 
-            # Set x, y on Packable
-            self._packable.x = self._x
-            self._packable.y = self._y
+        # Set x, y on Packable
+        self._packable.x = self._x
+        self._packable.y = self._y
 
-            # Create sub-regions
-            self._sub1 = PackRegion(self._x,
-                                    self._y+self._packable.height,
-                                    self._packable.width,
-                                    self._height-self._packable.height)
-            self._sub2 = PackRegion(self._x+self._packable.width,
-                                    self._y,
-                                    self._width-self._packable.width,
-                                    self._height)
-            return True
-
-        # Pack into sub-region
-        return self._sub1.pack(packable) or self._sub2.pack(packable)
+        # Create sub-regions
+        self._sub1 = PackRegion(self._x,
+                                self._y+self._packable.height,
+                                self._packable.width,
+                                self._height-self._packable.height)
+        self._sub2 = PackRegion(self._x+self._packable.width,
+                                self._y,
+                                self._width-self._packable.width,
+                                self._height)
+        return True
 
 class Frame(Packable):
     """An image file that can be packed into a PackRegion."""
@@ -191,7 +190,7 @@ class TextureAtlas(PackRegion):
         self._textures.append(texture)
         for frame in texture.frames:
             if not super(TextureAtlas, self).pack(frame):
-                raise Exception('Failed to pack frame %s' % frame.filename)
+                raise Exception(f'Failed to pack frame {frame.filename}')
 
     def write(self, filename, mode):
         """Generates the final texture atlas."""
